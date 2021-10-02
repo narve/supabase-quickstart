@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Supabase Quickstart</title>
+    <link rel="stylesheet" href="index.css">
+    <script src="index.js"></script>
+</head>
+<body>
+
+<h1>Supabase Quickstart</h1>
+
+<section>
+    <header>What is this?</header>
+
+    <p>
+        This is a simple way of quickly getting started with Supabase.
+        It does not require any setup or installation - just get your
+        Supabase configuration from the Supabase administration panel,
+        input them here, and test your Supabase instance :)
+    </p>
+    <p>
+        This code is deliberately kept simple: No frameworks, no fanciness,
+        limited functionality.
+    </p>
+</section>
+
+<button onclick="showRemotes()">init</button>
+
+<section>
+    <header>Supabase configuration</header>
+    <p class="supabase_config_info"></p>
+    <form class="set_remote">
+        <fieldset>
+            <legend>Supabase configuration</legend>
+            
+            <label>
+                Locate your <em>Supabase URL</em> on page XXX
+                <input type="text" name="base_url">
+            </label>
+            
+            <label>
+                Locate your <em>Supabase client id</em> on page XXX. 
+                <input type="text" name="client_id">
+            </label>
+
+            
+            <label>
+                Locate your <strong>PUBLIC</strong> <em>Supabase key</em> on page XXX. 
+                Do not use the <em>service key</em>, that should be kept secret. 
+                <input type="text" name="client_key">
+            </label>
+            
+            <label>
+                Enter a label for this configuration, e.g. your project name on Supabase. 
+                This is just to distinguish different Supabase configs from each other. 
+                <input type="text" name="name">
+            </label>
+            <label>
+                <input type="button" value="Add/update">
+            </label>
+            
+        </fieldset>
+    </form>
+</section>
+
+<section>
+    <header>User registration and login</header>
+    
+    <form class="register_user">
+        <fieldset>
+            <legend>Register user</legend>
+            <label>
+                E-mail
+                <input name="email" type="text">
+            </label>
+            <label>
+                Password
+                <input name="email" type="text">
+            </label>
+            <label>
+                Register a user
+                <input type="submit" value="Register">
+            </label>
+        </fieldset>
+    </form>
+    
+</section>
+
+<script>
+
+</script>
+
+</body>
+</html>

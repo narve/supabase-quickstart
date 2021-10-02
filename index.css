@@ -1,0 +1,13 @@
+section header {
+    font-weight: bolder;
+    font-size: large;
+}
+
+form label {
+    display: block;
+    padding-bottom: 1em;
+}
+
+form label input {
+    display: block;
+}
