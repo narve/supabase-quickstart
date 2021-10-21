@@ -3,6 +3,10 @@ section header {
     font-size: large;
 }
 
+#api-result-json {
+    /*display: none;*/
+}
+
 form label {
     display: block;
     padding-bottom: 1em;
