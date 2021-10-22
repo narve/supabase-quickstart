@@ -7,15 +7,15 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <!--    <script src="https://unpkg.com/lit-html"></script>-->
-    <script type="module" src="html-views.js"></script>
+    <script type="module" src="html-views.mjs"></script>
 
-    <script src="index.js"></script>
+    <script type="module" src="index.js"></script>
 </head>
 <body>
 
 <h1>Supabase Quickstart</h1>
 
-<section>
+<section title="Introduction" id="intro">
     <header>What is this?</header>
 
     <p>
@@ -30,10 +30,9 @@
     </p>
 </section>
 
-<button onclick="showRemotes()">init</button>
-
-<section>
+<section id="supa-config" title="Supabase configuration">
     <header>Supabase configuration</header>
+    <button onclick="showRemotes()">init</button>
     <p class="supabase_config_info"></p>
     <form class="set_remote">
         <fieldset>
@@ -67,11 +66,7 @@
 
         </fieldset>
     </form>
-</section>
 
-
-<section>
-    <header>Load/refresh tables</header>
     <form class="load_metadata">
         <fieldset>
             <legend>Load/refresh tables</legend>
@@ -79,12 +74,13 @@
                 <button>Load</button>
             </label>
         </fieldset>
-    </form>
+    </form>    
 </section>
 
 
-<section>
-    <header>Show data</header>
+
+<section id="data" title="Data explorer">
+    <header>Data explorer</header>
     <form class="show_table">
         <fieldset>
             <legend>Show data</legend>
@@ -105,7 +101,7 @@
 </section>
 
 
-<section style="display: none">
+<section id="reg" title="Login/registration">
     <header>User registration and login</header>
 
     <form class="register_user">

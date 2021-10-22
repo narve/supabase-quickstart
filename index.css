@@ -1,3 +1,31 @@
+nav {
+    border-bottom: 1px solid black;
+}
+
+nav ol {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+nav li {
+    display: inline-block;
+}
+
+nav li:not(:last-child) a::after {
+    display: inline-block;
+    color: #000;
+    content: '|';
+    font-size: 80%;
+    font-weight: bold;
+    padding: 0 3px;
+}
+
+nav a.active {
+    background: beige;
+    /*text-underline: black;*/
+    /*text-underline-style: dash-dot-heavy;*/
+}
+
 section header {
     font-weight: bolder;
     font-size: large;
@@ -14,4 +42,27 @@ form label {
 
 form label input {
     display: block;
+}
+
+td, th {
+    border: lightgrey 1px dashed;
+}
+
+th {
+    border-top: none;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+td:first-child, th:first-child {
+    border-left: none;
+}
+td:last-child, th:last-child {
+    border-right: none;
+}
+
+table {
+    border-collapse: collapse;
 }

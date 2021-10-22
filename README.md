@@ -1,1 +1,1 @@
-# supbase-quickstart
+# Supabase-quickstart

@@ -1,3 +1,10 @@
+// let renderModule;
+// (async () => renderModule = await import('./html-views.mjs'))();
+// const renderModule = await import('./html-views.mjs');
+// console.log('renderModule: ', renderModule);
+
+import {renderFunc, renderTable, createNav} from './html-views.mjs';
+
 const supabaseRemotes = "supabaseRemotes";
 
 
@@ -77,9 +84,6 @@ const actions = [
             jsonHolder.innerText = JSON.stringify(error || data, null, " ",);
 
             // const myTemplate = (name) => html`<p>Hello ${name}</p>`;
-            const renderModule = await import('./html-views.js');
-            console.log('renderModule: ', renderModule);
-            const {renderTable, renderFunc} = renderModule;
             console.log('renderTable: ', renderTable);
             const templateResult = renderTable(data);
             console.log('templateResult: ', templateResult);
@@ -113,7 +117,7 @@ const extractFormVals = form => {
     return res;
 }
 
-const initializePage = () => {
+const configureForms = () => {
     for (const action of actions) {
         console.log('Configuring action: ', action);
         for (const form of document.querySelectorAll("." + action.ref)) {
@@ -132,6 +136,38 @@ const initializePage = () => {
     }
     showRemotes();
     actions.find(a => a.ref === 'load_metadata').onClick();
+}
+
+const configureSections = () => {
+    const sections = [...document.querySelectorAll('section')];
+    for (const section of sections) {
+        section.style.display = 'none';
+    }
+    const active = sections[3];
+    active.style.display = null;
+    
+    const nav = createNav(sections);
+    renderFunc(nav, document.body, {renderBefore: document.body.firstChild});
+
+    const switchTab = () => {
+        for (const section of sections) {
+            const active = location.hash.indexOf(encodeURI(section.id)) >= 0;
+            section.style.display = active ? null : 'none';
+        }
+        for (const a of document.querySelectorAll("nav a")) {
+            a.classList.remove('active');
+            console.log('a: ', location.hash, a.href, a.href.endsWith(location.hash));
+            if (a.href.endsWith(location.hash))
+                a.classList.add('active');
+        }
+    }
+
+    window.addEventListener("hashchange", switchTab, false);
+}
+
+const initializePage = () => {
+    configureForms();
+    configureSections();
 }
 
 
