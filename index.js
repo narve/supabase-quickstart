@@ -1,44 +1,61 @@
-// let renderModule;
-// (async () => renderModule = await import('./html-views.mjs'))();
-// const renderModule = await import('./html-views.mjs');
-// console.log('renderModule: ', renderModule);
-
-import {renderFunc, renderTable, createNav} from './html-views.mjs';
-
-const supabaseRemotes = "supabaseRemotes";
-
-
-// import {createClient} from '@supabase/supabase-js'
-// import supabase from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js';
-// import supabase from 'https://unpkg.com/@supabase/supabase-js@1.24.0/dist/module/SupabaseClient.js';
+import {createDataTable, createNav, createOptions, render} from './html-views.mjs';
 
 const {createClient} = supabase;
 
-const initialRemotes = {
+const supabaseRemotes = "supabaseRemotes";
+const activeRemote = "narve";
+
+const initialRemotes = [{
     name: "narve",
     base_url: "https://xupzhicrqmyvtgztrmjb.supabase.co",
     client_key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTYxMDExNjg5NCwiZXhwIjoxOTI1NjkyODk0fQ.cvK8Il2IbFqU03Q4uOhSQ9jxFkWELLACX7mJKyy_Ue0',
-};
+}];
 
 const loadRemotes = () => JSON.parse(window.sessionStorage.getItem(supabaseRemotes) || "null") || initialRemotes;
 const saveRemotes = vals => window.sessionStorage.setItem(supabaseRemotes, JSON.stringify(vals));
 
-// saveRemotes({});
+const getActiveConfig = () => {
+    const configs = loadRemotes();
+    const cfgName = window.sessionStorage.getItem(activeRemote) || 'narve';
+    return configs.find(c => c.name === cfgName);
+}
 
-const showRemotes = () => {
-    console.log('showSupabaseConfiguration: ', loadRemotes());
-    const configs = JSON.stringify(loadRemotes());
+
+export const showRemotes = () => {
+    const remotes = loadRemotes();
+    console.log('showSupabaseConfiguration: ', remotes);
+
+    const configs = JSON.stringify(remotes);
     for (const element of document.querySelectorAll(".supabase_config_info")) {
         element.innerText = configs;
     }
+
+    const optionHolder = document.getElementById('config-option-holder');
+    optionHolder.innerHTML = "";
+    render(createOptions(remotes.map(n => n.name)), optionHolder);
 };
 
 const actions = [
     {
+        ref: 'choose-remote',
+        onClick: formVals => {
+            console.log('Applying supa-base-config: ', formVals);
+            const cfg = loadRemotes().find(c => c.name === formVals.name);
+            window.sessionStorage.setItem(activeRemote, formVals.name);
+            const f = document.querySelector('form.set_remote');
+            setFormVals(cfg, f);
+            actions.find(a => a.ref === 'load_metadata').onClick();
+        }
+    },
+    {
         ref: 'set_remote',
         onClick: formVals => {
             const remotes = loadRemotes();
-            remotes[formVals.name] = formVals;
+            const oldIndex = remotes.findIndex(x => x.name === formVals.name);
+            console.log('Remotes pre: ', remotes, 'oldIndex: ', oldIndex);
+            if (oldIndex >= 0) remotes.splice(oldIndex);
+            // remotes[formVals.name] = formVals;
+            remotes.push(formVals);
             saveRemotes(remotes);
             showRemotes();
         }
@@ -55,59 +72,57 @@ const actions = [
     {
         ref: 'load_metadata',
         onClick: async () => {
-            const config = loadRemotes();
+            const config = getActiveConfig();
             const supabase = createClient(config.base_url, config.client_key);
             const res = await supabase.from('tables').select(`*`).eq("table_schema", 'public');
             const {data, error} = res;
+            console.log('Fetched tables: ', data, error);
             if (data) {
                 populateTableSelector(data);
             }
-            const output = document.getElementById("api-result-json");
-            output.innerText = JSON.stringify(error || data, null, " ",);
+            for (const output of document.querySelectorAll(".api-result-json")) {
+                output.innerText = JSON.stringify(error || data, null, " ",);
+            }
         }
     },
     {
         ref: 'show_table',
-        onClick: async formVals => {
-            const table = formVals['tables'];
+        onClick: async (formVals, form) => {
+            const table = formVals['table'];
             console.log('table: ', formVals);
 
-            const config = loadRemotes();
+            const config = getActiveConfig();
             const supabase = createClient(config.base_url, config.client_key);
             const res = await supabase.from(table).select(`*`);
             const {data, error} = res;
-            if (data) {
-                populateTableSelector(data);
+            // if (data) {
+            //     populateTableSelector(data);
+            // }
+            for (const jsonHolder of document.querySelectorAll(".api-result-json")) {
+                jsonHolder.innerText = JSON.stringify(error || data, null, " ",);
             }
-            const jsonHolder = document.getElementById("api-result-json");
+
             const htmlHolder = document.getElementById("api-result-html");
-            jsonHolder.innerText = JSON.stringify(error || data, null, " ",);
-
-            // const myTemplate = (name) => html`<p>Hello ${name}</p>`;
-            console.log('renderTable: ', renderTable);
-            const templateResult = renderTable(data);
-            console.log('templateResult: ', templateResult);
-
-            // htmlHolder.innerText = "" + templateResult;
-
-            // Render the template to the document
-            renderFunc(templateResult, htmlHolder);
+            render(createDataTable(data), htmlHolder);
+            
+            // This is to make the selector nice again: 
+            setFormVals({table: ''}, form);
         },
     }
 ];
 
 const populateTableSelector = data => {
-    const selectors = document.querySelectorAll('.table-option-holder');
-    for (const selector of selectors) {
-        data.map(r => r.table_name).forEach((n, i) => {
-            const option = document.createElement('option', {name: 'asdf'});
-            option.innerText = n;
-            selector.append(option);
-            if (i === 0) option.selected = true;
-        });
-    }
+    const selector = document.querySelector('.table-option-holder');
+    render(createOptions(data.map(d => d.table_name)), selector);
 }
 
+const setFormVals = (vals, form) => {
+    for (const k in vals) {
+        console.log({vals, k});
+        const element = form.querySelector(`[name=${k}]`);
+        element.value = vals[k];
+    }
+}
 
 const extractFormVals = form => {
     const res = {};
@@ -127,7 +142,7 @@ const configureForms = () => {
             button.addEventListener('click', e => {
                 const formVals = extractFormVals(form);
                 console.log('Processing form: ', action.ref, formVals);
-                action.onClick(formVals);
+                action.onClick(formVals, form);
                 e.stopPropagation();
                 e.preventDefault();
                 return false;
@@ -143,11 +158,11 @@ const configureSections = () => {
     for (const section of sections) {
         section.style.display = 'none';
     }
-    const active = sections[3];
+    const active = sections[1];
     active.style.display = null;
-    
+
     const nav = createNav(sections);
-    renderFunc(nav, document.body, {renderBefore: document.body.firstChild});
+    render(nav, document.body, {renderBefore: document.body.firstChild});
 
     const switchTab = () => {
         for (const section of sections) {

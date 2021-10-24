@@ -1,4 +1,5 @@
 import {html, render} from 'https://unpkg.com/lit-html?module';
+export {html, render} from 'https://unpkg.com/lit-html?module';
 
 export const createNav = tabs =>
     html`
@@ -14,7 +15,7 @@ export const createNav = tabs =>
     `;
 
 
-export const renderRow = obj => html`
+export const createRow = obj => html`
     <tr>
         ${Object.keys(obj).map(k =>
                 html`
@@ -22,9 +23,7 @@ export const renderRow = obj => html`
         )}
     </tr>`;
 
-export const renderFunc = render;
-
-export const renderTable = data => html`
+export const createDataTable = data => html`
     <table>
         <thead>
         <tr>
@@ -37,6 +36,9 @@ export const renderTable = data => html`
         </tr>
         </thead>
         <tbody>
-        ${data.map(renderRow)}
+        ${data.map(createRow)}
         </tbody>
     </table>`;
+
+export const createOption = n => html`<option name="${n}">${n}</option>`;
+export const createOptions = tabs =>     html`${tabs.map(createOption)}`;

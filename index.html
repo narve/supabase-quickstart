@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="index.css">
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-<!--    <script src="https://unpkg.com/lit-html"></script>-->
+    <!--    <script src="https://unpkg.com/lit-html"></script>-->
     <script type="module" src="html-views.mjs"></script>
 
     <script type="module" src="index.js"></script>
@@ -25,6 +25,11 @@
         input them here, and test your Supabase instance :)
     </p>
     <p>
+        If you are really lazy, you can play around with the default
+        Supabase configuration, which is my own Supabase playground
+        application.
+    </p>
+    <p>
         This code is deliberately kept simple: No frameworks, no fanciness,
         limited functionality.
     </p>
@@ -32,8 +37,20 @@
 
 <section id="supa-config" title="Supabase configuration">
     <header>Supabase configuration</header>
-    <button onclick="showRemotes()">init</button>
     <p class="supabase_config_info"></p>
+    <form class="choose-remote">
+        <fieldset>
+            <legend>Choose remote</legend>
+            <label>
+                Choose a supabase-configuration:
+                <select id="config-option-holder" name="name">
+                </select>
+            </label>
+            <label>
+                <input type="submit" value="Apply">
+            </label>
+        </fieldset>
+    </form>
     <form class="set_remote">
         <fieldset>
             <legend>Supabase configuration</legend>
@@ -74,9 +91,8 @@
                 <button>Load</button>
             </label>
         </fieldset>
-    </form>    
+    </form>
 </section>
-
 
 
 <section id="data" title="Data explorer">
@@ -86,18 +102,21 @@
             <legend>Show data</legend>
             <label>
                 Choose table/view
-                <input name="tables" type="text" list="table-list">
+
+                <input name="table" type="text" list="table-list">
+                <datalist id="table-list" class="table-option-holder">
+                </datalist>
+
+<!--                <select name="table" class="table-option-holder"></select>-->
             </label>
-            <datalist id="table-list" class="table-option-holder">
-            </datalist>
             <label>Show data
                 <!--                <input type="submit" value="doit">-->
                 <button>Show data</button>
             </label>
         </fieldset>
     </form>
-    <div id="api-result-html">HTML PRE</div>
-    <pre id="api-result-json">PRE</pre>
+    <div id="api-result-html"></div>
+    <!--    <pre class="api-result-json">PRE</pre>-->
 </section>
 
 

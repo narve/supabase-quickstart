@@ -7,5 +7,6 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="@supabase" level="application" />
     <orderEntry type="library" name="lit-html" level="application" />
+    <orderEntry type="library" name="@supabase" level="application" />
   </component>
 </module>
