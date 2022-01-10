@@ -26,6 +26,10 @@ nav a.active {
     /*text-underline-style: dash-dot-heavy;*/
 }
 
+section {
+    max-width: 800px;
+}
+
 section header {
     font-weight: bolder;
     font-size: large;

@@ -1,5 +1,7 @@
 import {createDataTable, createNav, createOptions, render} from './html-views.mjs';
 
+import {newItem} from './html-views.mjs';
+
 const {createClient} = supabase;
 
 const supabaseRemotes = "supabaseRemotes";
@@ -177,6 +179,8 @@ const configureSections = () => {
         }
     }
 
+    // In case url already has a hashbang: 
+    switchTab();
     window.addEventListener("hashchange", switchTab, false);
 }
 

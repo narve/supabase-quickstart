@@ -103,7 +103,7 @@
             <label>
                 Choose table/view
 
-                <input name="table" type="text" list="table-list">
+                <input name="table" type="text" list="table-list" onchange="document.getElementById('show-data').click()">
                 <datalist id="table-list" class="table-option-holder">
                 </datalist>
 
@@ -111,7 +111,7 @@
             </label>
             <label>Show data
                 <!--                <input type="submit" value="doit">-->
-                <button>Show data</button>
+                <button id="show-data">Show data</button>
             </label>
         </fieldset>
     </form>

@@ -33,6 +33,7 @@ export const createDataTable = data => html`
                     : Object.keys(data[0]).map(h => html`
                         <th>${h}</th>`)
             }
+            <th><button class="new-item" onclick="newItem()">+Add</button></th>
         </tr>
         </thead>
         <tbody>
@@ -42,3 +43,5 @@ export const createDataTable = data => html`
 
 export const createOption = n => html`<option name="${n}">${n}</option>`;
 export const createOptions = tabs =>     html`${tabs.map(createOption)}`;
+
+export const newItem = () => console.log('newItem');
