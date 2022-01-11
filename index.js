@@ -60,15 +60,60 @@ const actions = [
             remotes.push(formVals);
             saveRemotes(remotes);
             showRemotes();
+            return 'done';
         }
     },
     {
         ref: 'register_user',
-        onClick: formVals => {
+        onClick: async formVals => {
             // const remotes = loadRemotes();
             // remotes[formVals.name] = formVals;
             // saveRemotes(remotes);
             // showRemotes();
+            const config = getActiveConfig();
+            const supabase = createClient(config.base_url, config.client_key);
+            const output = document.querySelector('.register_user .output');
+            const {user, error} = await supabase.auth.signUp({
+                email: formVals['email'],
+                password: formVals['password']
+            });
+            output.innerHTML = JSON.stringify({user, error});
+            console.log('register-user result: ', {user, error});
+
+        }
+    },
+    {
+        ref: 'logout',
+        onClick: async formVals => {
+            const config = getActiveConfig();
+            const supabase = createClient(config.base_url, config.client_key);
+            return await supabase.auth.signOut(); 
+        }
+    },
+    {
+        ref: 'login_with_password',
+        onClick: async formVals => {
+            const config = getActiveConfig();
+            const supabase = createClient(config.base_url, config.client_key);
+            console.log('login: ', formVals);
+            const {user, error} = await supabase.auth.signIn({
+                email: formVals['email'],
+                password: formVals['password']
+            });
+            return {user, error};
+        },
+    },
+    {
+        ref: 'show_user_info',
+        onClick: formVals => {
+            const config = getActiveConfig();
+            const supabase = createClient(config.base_url, config.client_key);
+            const user = supabase.auth.user();
+
+            // const output = document.getElementById('userinfo');
+            // output.innerText = JSON.stringify(user);
+            return user;
+
         }
     },
     {
@@ -106,7 +151,7 @@ const actions = [
 
             const htmlHolder = document.getElementById("api-result-html");
             render(createDataTable(data), htmlHolder);
-            
+
             // This is to make the selector nice again: 
             setFormVals({table: ''}, form);
         },
@@ -128,23 +173,40 @@ const setFormVals = (vals, form) => {
 
 const extractFormVals = form => {
     const res = {};
-    for (const input of form.querySelectorAll("input[type=text], select")) {
-        res[input.name] = input.value;
+    for (let input of form.querySelectorAll("input, select")) {
+        console.log('   => ', typeof input, input.name, !!input.name, input.inputType, input.type, input.attributes['type'], input);
+        res[input.name || input.attributes['type'].value] = input.value;
     }
     return res;
 }
 
-const configureForms = () => {
+const configureForms = async () => {
+    const n = {
+        forms: {},
+    }
+    document['n'] = n;
     for (const action of actions) {
         console.log('Configuring action: ', action);
         for (const form of document.querySelectorAll("." + action.ref)) {
             // console.log(' Form: ', form, form.querySelector('input[type=button]'));
             const button = form.querySelector('input[type=button], input[type=submit], button');
-            console.log(`   ${action}: ${!!form}, ${!!button}`)
-            button.addEventListener('click', e => {
+            const output = form.querySelector('.output');
+            const inputs = form.querySelectorAll('input, select');
+            for (let input of inputs) {
+                input.addEventListener('change', () => {
+                    console.log('form ' + action.ref + ": " + form.checkValidity());
+                    return button.disabled = !form.checkValidity();
+                });
+            }
+            console.log(`   ${action}: ${!!form}, ${!!button}`);
+            n.forms[action.ref] = form;
+            button.addEventListener('click', async e => {
                 const formVals = extractFormVals(form);
                 console.log('Processing form: ', action.ref, formVals);
-                action.onClick(formVals, form);
+                const result = await action.onClick(formVals, form);
+                console.log('  action result: ', result);
+                if (output)
+                    output.innerHTML = JSON.stringify(result);
                 e.stopPropagation();
                 e.preventDefault();
                 return false;

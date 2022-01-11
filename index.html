@@ -103,11 +103,12 @@
             <label>
                 Choose table/view
 
-                <input name="table" type="text" list="table-list" onchange="document.getElementById('show-data').click()">
+                <input name="table" type="text" list="table-list"
+                       onchange="document.getElementById('show-data').click()">
                 <datalist id="table-list" class="table-option-holder">
                 </datalist>
 
-<!--                <select name="table" class="table-option-holder"></select>-->
+                <!--                <select name="table" class="table-option-holder"></select>-->
             </label>
             <label>Show data
                 <!--                <input type="submit" value="doit">-->
@@ -123,21 +124,61 @@
 <section id="reg" title="Login/registration">
     <header>User registration and login</header>
 
+    <form class="show_user_info">
+        <fieldset>
+            <legend>Show user info</legend>
+            <input type="submit" value="Load">
+
+            <textarea class="output" id="userinfo" readonly></textarea>
+
+        </fieldset>
+    </form>
+
+    <form class="logout">
+        <fieldset>
+            <legend>Log out</legend>
+            <input type="submit" value="Log out">
+            <textarea readonly class="output"></textarea>
+        </fieldset>
+    </form>
+
+    <form class="login_with_password">
+        <fieldset>
+            <legend>Login with email / password</legend>
+            <label>
+                Email
+                <input type="email" required>
+            </label>
+            <label>
+                Password
+                <input type="password" required>
+            </label>
+            <input type="submit" disabled value="Login">
+
+            <label>
+                Result
+                <textarea readonly class="output"></textarea>
+            </label>
+
+        </fieldset>
+    </form>
+
     <form class="register_user">
         <fieldset>
             <legend>Register user</legend>
             <label>
                 E-mail
-                <input name="email" type="text">
+                <input type="email">
             </label>
             <label>
                 Password
-                <input name="email" type="text">
+                <input type="password">
             </label>
             <label>
                 Register a user
-                <input type="submit" value="Register">
+                <input type="submit" disabled value="Register">
             </label>
+            <textarea readonly class="output"></textarea>
         </fieldset>
     </form>
 
