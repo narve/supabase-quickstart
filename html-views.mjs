@@ -33,11 +33,11 @@ export const createDataTable = data => html`
                             ? html`
                                 <th>No data</th>`
                             :
-                            data.length === 0
+                            (data.length === 0
                                     ? html`
                                         <th>no rows</th>`
                                     : Object.keys(data[0]).map(h => html`
-                                        <th>${h}</th>`)
+                                        <th>${h}</th>`))
             }
             <th>
                 <button class="new-item" onclick="newItem()">+Add</button>

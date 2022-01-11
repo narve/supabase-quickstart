@@ -37,6 +37,13 @@ export const showRemotes = () => {
     render(createOptions(remotes.map(n => n.name)), optionHolder);
 };
 
+const getClient = () => {
+    const config = getActiveConfig();
+    const supabase = createClient(config.base_url, config.client_key);
+    return supabase;
+};
+
+
 const actions = [
     {
         ref: 'choose-remote',
@@ -66,41 +73,27 @@ const actions = [
     {
         ref: 'register_user',
         onClick: async formVals => {
-            // const remotes = loadRemotes();
-            // remotes[formVals.name] = formVals;
-            // saveRemotes(remotes);
-            // showRemotes();
-            const config = getActiveConfig();
-            const supabase = createClient(config.base_url, config.client_key);
-            const output = document.querySelector('.register_user .output');
-            const {user, error} = await supabase.auth.signUp({
+            return await getClient().auth.signUp({
                 email: formVals['email'],
                 password: formVals['password']
             });
-            output.innerHTML = JSON.stringify({user, error});
-            console.log('register-user result: ', {user, error});
-
         }
     },
     {
         ref: 'logout',
         onClick: async formVals => {
-            const config = getActiveConfig();
-            const supabase = createClient(config.base_url, config.client_key);
-            return await supabase.auth.signOut(); 
+            const res = await getClient().auth.signOut();
+            window.localStorage.setItem('supabase.auth.token', null);
+            return res;
         }
     },
     {
         ref: 'login_with_password',
         onClick: async formVals => {
-            const config = getActiveConfig();
-            const supabase = createClient(config.base_url, config.client_key);
-            console.log('login: ', formVals);
-            const {user, error} = await supabase.auth.signIn({
+            return await getClient().auth.signIn({
                 email: formVals['email'],
                 password: formVals['password']
             });
-            return {user, error};
         },
     },
     {
@@ -138,10 +131,13 @@ const actions = [
             const table = formVals['table'];
             console.log('table: ', formVals);
 
-            const config = getActiveConfig();
-            const supabase = createClient(config.base_url, config.client_key);
-            const res = await supabase.from(table).select(`*`);
+            const res = await getClient().from(table).select(`*`);
             const {data, error} = res;
+
+            // This is to make the selector nice again: 
+            setFormVals({table: ''}, form);
+
+            return table;
             // if (data) {
             //     populateTableSelector(data);
             // }
@@ -152,8 +148,6 @@ const actions = [
             const htmlHolder = document.getElementById("api-result-html");
             render(createDataTable(data), htmlHolder);
 
-            // This is to make the selector nice again: 
-            setFormVals({table: ''}, form);
         },
     }
 ];
@@ -167,7 +161,7 @@ const setFormVals = (vals, form) => {
     for (const k in vals) {
         console.log({vals, k});
         const element = form.querySelector(`[name=${k}]`);
-        element.value = vals[k];
+        if (element) element.value = vals[k];
     }
 }
 
@@ -209,6 +203,7 @@ const configureForms = async () => {
                     output.innerHTML = JSON.stringify(result);
                 e.stopPropagation();
                 e.preventDefault();
+                console.log('Done with form ', action.ref);
                 return false;
             });
         }
