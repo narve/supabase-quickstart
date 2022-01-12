@@ -1,6 +1,6 @@
-import {createDataTable, createNav, createOptions, render} from './html-views.mjs';
+import {createDataTable, createNav, createOptions, createTableLinks, html, render} from './html-views.mjs';
 
-import {newItem} from './html-views.mjs';
+// import {newItem} from './html-views.mjs';
 
 const {createClient} = supabase;
 
@@ -39,8 +39,7 @@ export const showRemotes = () => {
 
 const getClient = () => {
     const config = getActiveConfig();
-    const supabase = createClient(config.base_url, config.client_key);
-    return supabase;
+    return createClient(config.base_url, config.client_key);
 };
 
 
@@ -112,9 +111,7 @@ const actions = [
     {
         ref: 'load_metadata',
         onClick: async () => {
-            const config = getActiveConfig();
-            const supabase = createClient(config.base_url, config.client_key);
-            const res = await supabase.from('tables').select(`*`).eq("table_schema", 'public');
+            const res = await getClient().from('tables').select(`*`).eq("table_schema", 'public');
             const {data, error} = res;
             console.log('Fetched tables: ', data, error);
             if (data) {
@@ -129,32 +126,87 @@ const actions = [
         ref: 'show_table',
         onClick: async (formVals, form) => {
             const table = formVals['table'];
-            console.log('table: ', formVals);
+            console.log('table: ', formVals?.table);
+            // if (!formVals || !formVals.table)
+            //     return;
 
-            const res = await getClient().from(table).select(`*`);
+            const template = await getClient().from("").select('*');
+            const propMap = template.data.definitions[table].properties;
+            const props = Object.keys(propMap)
+                .map(key => ({key, ...propMap[key]}))
+                .filter(prop => prop.description?.indexOf("<pk/>") < 0);
+            const fksToLoad = props.filter(prop => prop.description.indexOf("<fk ") >= 0);
+            for (const prop of fksToLoad) {
+                const [, table, column] = [...prop.description.matchAll(/.*<fk table='(.*)' column='(.*)'.*/g)]
+                    [0];
+                prop.fk = {table, column};
+            }
+            console.log('fkstoload: ', fksToLoad);
+
+
+            const titleColumn = (tab, id) => {
+                const remoteTable = template.data.definitions[tab];
+                const propsToTry = ['title', 'handle', 'name', 'id']; 
+                return propsToTry.find(p => remoteTable.properties[p]); 
+            }
+
+            let select = "*";
+            for (const fk of fksToLoad) {
+                select += `, ${fk.fk.table} ( id, ${titleColumn(fk.fk.table, fk.fk.column)} )`;
+            }
+            console.log('using select: ', select);
+
+
+            // const res = await getClient().from(table).select(`*, teacher ( id, handle )`);
+            const res = await getClient().from(table).select(select);
             const {data, error} = res;
 
             // This is to make the selector nice again: 
-            setFormVals({table: ''}, form);
+            if (form)
+                setFormVals({table: ''}, form);
 
-            return table;
-            // if (data) {
-            //     populateTableSelector(data);
-            // }
             for (const jsonHolder of document.querySelectorAll(".api-result-json")) {
                 jsonHolder.innerText = JSON.stringify(error || data, null, " ",);
             }
 
             const htmlHolder = document.getElementById("api-result-html");
-            render(createDataTable(data), htmlHolder);
+            render(createDataTable(data, table), htmlHolder);
 
-        },
+        }
+    },
+    {
+        ref: "create",
+        onClick: async (formVals, form) => {
+            console.log('should create: ', {formVals, form});
+
+            const obj = {...formVals};
+            delete obj.submit;
+            delete obj.type;
+
+            const x = await getClient().from(formVals.type).insert([
+                obj
+            ]);
+
+            return x;
+
+        }
     }
 ];
 
 const populateTableSelector = data => {
+    populateTableSelectorForm(data);
+    populateTableLinks(data);
+
+}
+
+const populateTableSelectorForm = data => {
     const selector = document.querySelector('.table-option-holder');
     render(createOptions(data.map(d => d.table_name)), selector);
+}
+
+const populateTableLinks = data => {
+    const selector = document.querySelector('.table-links-holder');
+    render(createTableLinks(data.map(d => d.table_name)), selector);
 }
 
 const setFormVals = (vals, form) => {
@@ -174,7 +226,7 @@ const extractFormVals = form => {
     return res;
 }
 
-const configureForms = async () => {
+const configureForms = () => {
     const n = {
         forms: {},
     }
@@ -194,18 +246,20 @@ const configureForms = async () => {
             }
             console.log(`   ${action}: ${!!form}, ${!!button}`);
             n.forms[action.ref] = form;
-            button.addEventListener('click', async e => {
-                const formVals = extractFormVals(form);
-                console.log('Processing form: ', action.ref, formVals);
-                const result = await action.onClick(formVals, form);
-                console.log('  action result: ', result);
-                if (output)
-                    output.innerHTML = JSON.stringify(result);
-                e.stopPropagation();
-                e.preventDefault();
-                console.log('Done with form ', action.ref);
-                return false;
-            });
+            if (button) {
+                button.addEventListener('click', async e => {
+                    const formVals = extractFormVals(form);
+                    console.log('Processing form: ', action.ref, formVals);
+                    const result = await action.onClick(formVals, form);
+                    console.log('  action result: ', result);
+                    if (output)
+                        output.innerHTML = JSON.stringify(result);
+                    e.stopPropagation();
+                    e.preventDefault();
+                    console.log('Done with form ', action.ref);
+                    return false;
+                });
+            }
         }
     }
     showRemotes();
@@ -224,6 +278,7 @@ const configureSections = () => {
     render(nav, document.body, {renderBefore: document.body.firstChild});
 
     const switchTab = () => {
+        console.log('Tab-switcher: ', location.hash);
         for (const section of sections) {
             const active = location.hash.indexOf(encodeURI(section.id)) >= 0;
             section.style.display = active ? null : 'none';
@@ -234,6 +289,16 @@ const configureSections = () => {
             if (a.href.endsWith(location.hash))
                 a.classList.add('active');
         }
+
+        if (location.hash.indexOf('table=') >= 0) {
+            const table = location.hash.substring(location.hash.indexOf('table=') + 'table='.length);
+            const action = actions.find(a => a.ref === 'show_table');
+            console.log('should show table: ', table, action);
+            action.onClick({table});
+
+            initializeCreateForm(table);
+        }
+
     }
 
     // In case url already has a hashbang: 
@@ -248,3 +313,60 @@ const initializePage = () => {
 
 
 document.addEventListener('DOMContentLoaded', initializePage);
+
+
+const initializeCreateForm = async (table) => {
+
+    console.log('configure create form', table);
+    const template = await getClient().from("").select('*');
+    const propMap = template.data.definitions[table].properties;
+    console.log('propMap: ', propMap);
+
+    const props = Object.keys(propMap)
+        .map(key => ({key, ...propMap[key]}))
+        .filter(prop => prop.description?.indexOf("<pk/>") < 0);
+
+    console.log('props: ', props);
+
+    const fksToLoad = props.filter(prop => prop.description.indexOf("<fk ") >= 0);
+
+    for (const prop of props) {
+        const [, table, column] = [...prop.description.matchAll(/.*<fk table='(.*)' column='(.*)'.*/g)]
+            [0];
+        prop.fk = {table, column};
+    }
+
+    const dataListForProp = async prop => {
+        const did = prop.fk.table + "." + prop.fk.column;
+        const vals = await getClient().from(prop.fk.table).select('*');
+        return html`
+            <label>Datalist for ${prop.key} / ${prop.description}</label>
+            <datalist id="${did}">
+                ${vals.data.map(row => html`
+                    <option value="${row[prop.fk.column]}" name="${row.name || row.title || row.handle || row.id}">
+                        ${row.name || row.title || row.handle || row.id}
+                    </option>
+                `)}
+            </datalist>`;
+    };
+
+    const content = await html`
+        ${await Promise.all(fksToLoad.map(async prop => await dataListForProp(prop)))}
+
+        <label>Type:
+            <input type="text" name="type" readonly disabled value="${table}">
+        </label>
+
+        ${fksToLoad.map(prop => {
+            const did = prop.fk.table + "." + prop.fk.column;
+            return html`
+                <!--                <span>${JSON.stringify(prop)}</span>-->
+                <label>${prop.key}:
+                    <input name="${prop.key}" type="text" list="${did}" required>
+                </label>
+            `;
+        })}
+    `;
+    const holder = document.querySelector('.create-inputs');
+    render(content, holder);
+};

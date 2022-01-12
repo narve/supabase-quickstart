@@ -97,6 +97,11 @@
 
 <section id="data" title="Data explorer">
     <header>Data explorer</header>
+    
+    <menu class="table-links-holder">
+        
+    </menu>
+    
     <form class="show_table">
         <fieldset>
             <legend>Show data</legend>
@@ -113,7 +118,8 @@
             </label>
             <label>Show data
                 <!--                <input type="submit" value="doit">-->
-                <input type="submit" value="Show data" disabled>
+                <!--                <input type="submit" value="Show data" disabled>-->
+<!--                <button>Show it</button>-->
             </label>
         </fieldset>
     </form>
@@ -185,9 +191,18 @@
 
 </section>
 
-<script>
-
-</script>
-
+<section class="create" data-onshow="initializeCreateForm">
+    <form>
+        <div class="fk-datalist-holder"></div>
+        <fieldset>
+            <legend>Create</legend>
+            <div class="create-inputs"></div>
+            <input type="submit" value="Create">
+            
+            <textarea class="output" readonly></textarea>
+            
+        </fieldset>
+    </form>
+</section>
 </body>
 </html>
