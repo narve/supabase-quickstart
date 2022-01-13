@@ -1,8 +1,8 @@
 import {createDataTable, createNav, createOptions, createTableLinks, html, render} from './html-views.mjs';
-
-// import {newItem} from './html-views.mjs';
+import {colVal, processOpenApi} from "./supa-openapi.mjs";
 
 const {createClient} = supabase;
+
 
 const supabaseRemotes = "supabaseRemotes";
 const activeRemote = "narve";
@@ -97,24 +97,15 @@ const actions = [
     },
     {
         ref: 'show_user_info',
-        onClick: formVals => {
-            const config = getActiveConfig();
-            const supabase = createClient(config.base_url, config.client_key);
-            const user = supabase.auth.user();
-
-            // const output = document.getElementById('userinfo');
-            // output.innerText = JSON.stringify(user);
-            return user;
-
-        }
+        onClick: formVals => getClient().auth.user()
     },
     {
         ref: 'load_metadata',
         onClick: async () => {
-            const res = await getClient().from('tables').select(`*`).eq("table_schema", 'public');
-            const {data, error} = res;
+            const {data, error} = await getClient().from('').select(`*`);
             console.log('Fetched tables: ', data, error);
             if (data) {
+                processOpenApi(data);
                 populateTableSelector(data);
             }
             for (const output of document.querySelectorAll(".api-result-json")) {
@@ -125,40 +116,27 @@ const actions = [
     {
         ref: 'show_table',
         onClick: async (formVals, form) => {
-            const table = formVals['table'];
+            const tableName = formVals['table'];
             console.log('table: ', formVals?.table);
-            // if (!formVals || !formVals.table)
-            //     return;
 
-            const template = await getClient().from("").select('*');
-            const propMap = template.data.definitions[table].properties;
-            const props = Object.keys(propMap)
-                .map(key => ({key, ...propMap[key]}))
-                .filter(prop => prop.description?.indexOf("<pk/>") < 0);
-            const fksToLoad = props.filter(prop => prop.description.indexOf("<fk ") >= 0);
-            for (const prop of fksToLoad) {
-                const [, table, column] = [...prop.description.matchAll(/.*<fk table='(.*)' column='(.*)'.*/g)]
-                    [0];
-                prop.fk = {table, column};
-            }
-            console.log('fkstoload: ', fksToLoad);
+            const {data: openApi} = await getClient().from("").select('*');
+            processOpenApi(openApi);
 
+            const table = openApi.definitions[tableName];
 
-            const titleColumn = (tab, id) => {
-                const remoteTable = template.data.definitions[tab];
-                const propsToTry = ['title', 'handle', 'name', 'id']; 
-                return propsToTry.find(p => remoteTable.properties[p]); 
-            }
+            const fksToLoad = Object.values(table.properties)
+                .filter(prop => prop.isFk);
+            // console.log('fkstoload: ', fksToLoad);
+            // console.log('using table: ', table);
+
 
             let select = "*";
             for (const fk of fksToLoad) {
-                select += `, ${fk.fk.table} ( id, ${titleColumn(fk.fk.table, fk.fk.column)} )`;
+                select += `, ${fk.fk.table} ( id, ${fk.fk.select} )`;
             }
-            console.log('using select: ', select);
+            // console.log('using select: ', select);
 
-
-            // const res = await getClient().from(table).select(`*, teacher ( id, handle )`);
-            const res = await getClient().from(table).select(select);
+            const res = await getClient().from(tableName).select(select);
             const {data, error} = res;
 
             // This is to make the selector nice again: 
@@ -170,7 +148,7 @@ const actions = [
             }
 
             const htmlHolder = document.getElementById("api-result-html");
-            render(createDataTable(data, table), htmlHolder);
+            render(createDataTable(data, tableName), htmlHolder);
 
         }
     },
@@ -182,31 +160,39 @@ const actions = [
             const obj = {...formVals};
             delete obj.submit;
             delete obj.type;
-
-            const x = await getClient().from(formVals.type).insert([
+            return await getClient().from(formVals.type).insert([
                 obj
             ]);
-
-            return x;
-
         }
-    }
+    },
+    {
+        ref: "delete",
+        onClick: async (formVals, form) => {
+            console.log('should create: ', {formVals, form});
+            if (!formVals.id || !formVals.table) {
+                throw new Error('Missing data for delete!"')
+            }
+            return await getClient().from(formVals.table).delete().eq('id', formVals.id);
+        }
+    },
 ];
 
-const populateTableSelector = data => {
-    populateTableSelectorForm(data);
-    populateTableLinks(data);
+const populateTableSelector = openApi => {
+    // populateTableSelectorForm(data);
+    populateTableLinks(openApi);
 
 }
 
-const populateTableSelectorForm = data => {
-    const selector = document.querySelector('.table-option-holder');
-    render(createOptions(data.map(d => d.table_name)), selector);
-}
+// const populateTableSelectorForm = data => {
+//     const selector = document.querySelector('.table-option-holder');
+//     render(createOptions(data.definitions.map(d => d.id)), selector);
+// }
 
 const populateTableLinks = data => {
+    console.log('table-links: ', data);
     const selector = document.querySelector('.table-links-holder');
-    render(createTableLinks(data.map(d => d.table_name)), selector);
+    const names = Object.keys(data.definitions);
+    render(createTableLinks(names), selector);
 }
 
 const setFormVals = (vals, form) => {
@@ -232,7 +218,7 @@ const configureForms = () => {
     }
     document['n'] = n;
     for (const action of actions) {
-        console.log('Configuring action: ', action);
+        console.log('Configuring action: ', action.ref);
         for (const form of document.querySelectorAll("." + action.ref)) {
             // console.log(' Form: ', form, form.querySelector('input[type=button]'));
             const button = form.querySelector('input[type=button], input[type=submit], button');
@@ -244,22 +230,25 @@ const configureForms = () => {
                     return button.disabled = !form.checkValidity();
                 });
             }
-            console.log(`   ${action}: ${!!form}, ${!!button}`);
+            // console.log(`   ${action}: ${!!form}, ${!!button}`);
             n.forms[action.ref] = form;
             if (button) {
-                button.addEventListener('click', async e => {
+                button.addEventListener('click', e => {
                     const formVals = extractFormVals(form);
                     console.log('Processing form: ', action.ref, formVals);
-                    const result = await action.onClick(formVals, form);
-                    console.log('  action result: ', result);
-                    if (output)
-                        output.innerHTML = JSON.stringify(result);
+                    action.onClick(formVals, form)
+                        .then(result => {
+                            console.log('  action result: ', result);
+                            if (output)
+                                output.innerHTML = JSON.stringify(result);
+                            console.log('Done with form ', action.ref);
+                        });
                     e.stopPropagation();
                     e.preventDefault();
-                    console.log('Done with form ', action.ref);
                     return false;
                 });
             }
+            console.log('   ', action.ref, ' button: ', !!button, ' output: ', !!output);
         }
     }
     showRemotes();
@@ -278,25 +267,36 @@ const configureSections = () => {
     render(nav, document.body, {renderBefore: document.body.firstChild});
 
     const switchTab = () => {
-        console.log('Tab-switcher: ', location.hash);
+        // console.log('Tab-switcher: ', location.hash);
+        const hashEntries = location.hash
+            .substring(1)
+            .split(",")
+            .map(pair => pair.split("="))
+            .map(pair => ({key: pair[0], value: pair[1]}));
+        const hashMap = hashEntries
+            .reduce((map, obj) => {
+                map[obj.key] = obj.value;
+                return map;
+            }, {});
+        console.log('Tab-switcher 2: ', hashMap);
+
         for (const section of sections) {
-            const active = location.hash.indexOf(encodeURI(section.id)) >= 0;
+            const active = hashMap.section === section.id;
             section.style.display = active ? null : 'none';
         }
         for (const a of document.querySelectorAll("nav a")) {
             a.classList.remove('active');
-            console.log('a: ', location.hash, a.href, a.href.endsWith(location.hash));
-            if (a.href.endsWith(location.hash))
+            // console.log('a: ', location.hash, a.href, a.href.endsWith(location.hash));
+            if (a.href.endsWith(hashMap.section))
                 a.classList.add('active');
         }
 
-        if (location.hash.indexOf('table=') >= 0) {
-            const table = location.hash.substring(location.hash.indexOf('table=') + 'table='.length);
+        if (hashMap.table) {
             const action = actions.find(a => a.ref === 'show_table');
-            console.log('should show table: ', table, action);
-            action.onClick({table});
-
-            initializeCreateForm(table);
+            console.log('should show table: ', hashMap.table, action);
+            action.onClick({table: hashMap.table});
+            initializeCreateForm(hashMap);
+            initializeDeleteForm(hashMap);
         }
 
     }
@@ -314,40 +314,51 @@ const initializePage = () => {
 
 document.addEventListener('DOMContentLoaded', initializePage);
 
+const initializeDeleteForm = async (hashMap) => {
+    console.log('initialize delete form', hashMap.table);
+    const form = document.querySelector(".delete");
+    form.querySelector("input[name=table]").value = hashMap.table;
+    form.querySelector("input[name=id]").value = hashMap.id;
+}
 
-const initializeCreateForm = async (table) => {
 
-    console.log('configure create form', table);
-    const template = await getClient().from("").select('*');
-    const propMap = template.data.definitions[table].properties;
+const initializeCreateForm = async (args) => {
+    const table = args.table;
+    console.log('initialize create form', table);
+    const {data} = await getClient().from("").select('*');
+    processOpenApi(data);
+    const propMap = data.definitions[table].properties;
     console.log('propMap: ', propMap);
 
     const props = Object.keys(propMap)
         .map(key => ({key, ...propMap[key]}))
-        .filter(prop => prop.description?.indexOf("<pk/>") < 0);
+        .filter(prop => !prop.isPk);
 
     console.log('props: ', props);
 
-    const fksToLoad = props.filter(prop => prop.description.indexOf("<fk ") >= 0);
+    const fksToLoad = props.filter(prop => prop.isFk);
 
-    for (const prop of props) {
-        const [, table, column] = [...prop.description.matchAll(/.*<fk table='(.*)' column='(.*)'.*/g)]
-            [0];
-        prop.fk = {table, column};
-    }
 
     const dataListForProp = async prop => {
         const did = prop.fk.table + "." + prop.fk.column;
         const vals = await getClient().from(prop.fk.table).select('*');
         return html`
-            <label>Datalist for ${prop.key} / ${prop.description}</label>
+            <!--            <label>Datalist for ${prop.key} / ${prop.description}</label>-->
             <datalist id="${did}">
                 ${vals.data.map(row => html`
-                    <option value="${row[prop.fk.column]}" name="${row.name || row.title || row.handle || row.id}">
+                    <option value="${row[prop.fk.column]}" name="${colVal(row)}">
                         ${row.name || row.title || row.handle || row.id}
                     </option>
                 `)}
             </datalist>`;
+    };
+
+    const propToInput = prop => {
+        if (prop.fk) {
+            const did = prop.fk.table + "." + prop.fk.column;
+            return html`<input name="${prop.key}" type="text" list="${did}" required>`;
+        }
+        return html`<input name="${prop.key}" type="text" required>`;
     };
 
     const content = await html`
@@ -357,12 +368,11 @@ const initializeCreateForm = async (table) => {
             <input type="text" name="type" readonly disabled value="${table}">
         </label>
 
-        ${fksToLoad.map(prop => {
-            const did = prop.fk.table + "." + prop.fk.column;
+        ${props.map(prop => {
             return html`
                 <!--                <span>${JSON.stringify(prop)}</span>-->
                 <label>${prop.key}:
-                    <input name="${prop.key}" type="text" list="${did}" required>
+                    ${propToInput(prop)}
                 </label>
             `;
         })}

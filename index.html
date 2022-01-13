@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>Supabase Quickstart</title>
-    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="styles/index.css">
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <!--    <script src="https://unpkg.com/lit-html"></script>-->
-    <script type="module" src="html-views.mjs"></script>
+    <script type="module" src="scripts/html-views.mjs"></script>
 
-    <script type="module" src="index.js"></script>
+    <script type="module" src="scripts/index.js"></script>
 </head>
 <body>
 
@@ -97,32 +97,32 @@
 
 <section id="data" title="Data explorer">
     <header>Data explorer</header>
-    
+
     <menu class="table-links-holder">
-        
+
     </menu>
-    
-    <form class="show_table">
-        <fieldset>
-            <legend>Show data</legend>
-            <label>
-                Choose table/view
+    <!--    -->
+    <!--    <form class="show_table">-->
+    <!--        <fieldset>-->
+    <!--            <legend>Show data</legend>-->
+    <!--            <label>-->
+    <!--                Choose table/view-->
 
-                <!--                       onchange="document.getElementById('show-data').click()"-->
-                <input name="table" type="text" list="table-list" required
-                >
-                <datalist id="table-list" class="table-option-holder">
-                </datalist>
+    <!--                &lt;!&ndash;                       onchange="document.getElementById('show-data').click()"&ndash;&gt;-->
+    <!--                <input name="table" type="text" list="table-list" required-->
+    <!--                >-->
+    <!--                <datalist id="table-list" class="table-option-holder">-->
+    <!--                </datalist>-->
 
-                <!--                <select name="table" class="table-option-holder"></select>-->
-            </label>
-            <label>Show data
-                <!--                <input type="submit" value="doit">-->
-                <!--                <input type="submit" value="Show data" disabled>-->
-<!--                <button>Show it</button>-->
-            </label>
-        </fieldset>
-    </form>
+    <!--                &lt;!&ndash;                <select name="table" class="table-option-holder"></select>&ndash;&gt;-->
+    <!--            </label>-->
+    <!--            <label>Show data-->
+    <!--                &lt;!&ndash;                <input type="submit" value="doit">&ndash;&gt;-->
+    <!--                &lt;!&ndash;                <input type="submit" value="Show data" disabled>&ndash;&gt;-->
+    <!--&lt;!&ndash;                <button>Show it</button>&ndash;&gt;-->
+    <!--            </label>-->
+    <!--        </fieldset>-->
+    <!--    </form>-->
     <div id="api-result-html"></div>
     <!--    <pre class="api-result-json">PRE</pre>-->
 </section>
@@ -191,16 +191,34 @@
 
 </section>
 
-<section class="create" data-onshow="initializeCreateForm">
-    <form>
+<section id="create">
+    <form class="create">
         <div class="fk-datalist-holder"></div>
         <fieldset>
-            <legend>Create</legend>
+            <legend>Create <span class="table-name"></span></legend>
             <div class="create-inputs"></div>
             <input type="submit" value="Create">
-            
+
             <textarea class="output" readonly></textarea>
-            
+
+        </fieldset>
+    </form>
+</section>
+
+<section id="delete">
+    <form class="delete">
+        <fieldset>
+            <legend>Delete</legend>
+            <label>Table:
+                <input type="text" name="table">
+            </label>
+            <label>Id:
+                <input type="text" name="id">
+            </label>
+            <input type="submit" value="Delete">
+
+            <textarea class="output" readonly></textarea>
+
         </fieldset>
     </form>
 </section>

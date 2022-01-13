@@ -1,11 +1,7 @@
-import {html, render} from 'https://unpkg.com/lit-html?module';
+import {html} from 'https://unpkg.com/lit-html?module';
+import {colVal} from "./supa-openapi.mjs";
 
 export {html, render} from 'https://unpkg.com/lit-html?module';
-
-// var newItem = () => console.log('newItem3');
-//
-// window.newItem = () => console.log('newItem4');
-
 
 export const createNav = tabs =>
     html`
@@ -13,7 +9,7 @@ export const createNav = tabs =>
             <ol>
                 ${tabs.map(n => html`
                     <li>
-                        <a href="#${n.id}">${n.title}</a>
+                        <a href="#section=${n.id}">${n.title}</a>
                     </li>`
                 )}
             </ol>
@@ -21,21 +17,13 @@ export const createNav = tabs =>
     `;
 
 
-export const colVal = col => {
-    if (typeof col === "object") {
-        const s = col['title'] || col['name'] || col['handle'] || col['id']; 
-        // return html`<a href="the-ref">${s}</a>`; 
-        return s; 
-    }
-    return col;
-};
-
-export const createRow = obj => html`
+export const createRow = (obj, table) => html`
     <tr>
         ${Object.keys(obj).map(k =>
                 html`
                     <td>${colVal(obj[k])}</td>`
         )}
+        <td><a href="#section=delete,table=${table},id=${obj.id}">DELETE</a></td>
     </tr>`;
 
 export const createDataTable = (data, table) => html`
@@ -56,7 +44,7 @@ export const createDataTable = (data, table) => html`
         </tr>
         </thead>
         <tbody>
-        ${(data ?? []).map(createRow)}
+        ${(data ?? []).map(o => createRow(o, table))}
         </tbody>
     </table>`;
 
